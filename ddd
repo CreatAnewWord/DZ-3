@@ -1,58 +1,85 @@
-public class ArrayValueCalculator {
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-    public static int doCalc(String[][] array) throws ArraySizeException, ArrayDataException {
-       
-        if (array.length != 4 || array[0].length != 4 || array[1].length != 4 || array[2].length != 4 || array[3].length != 4) {
-            throw new ArraySizeException("Масив повинен бути розміром 4x4");
+class FileData {
+    private String fileName;
+    private long fileSize;
+    private String filePath;
+
+    public FileData(String fileName, long fileSize, String filePath) {
+        this.fileName = fileName;
+        this.fileSize = fileSize;
+        this.filePath = filePath;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public long getFileSize() {
+        return fileSize;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+}
+
+class FileNavigator {
+    private Map<String, List<FileData>> pathToFiles = new HashMap<>();
+
+    public void add(String fileName, long fileSize, String filePath) {
+        // Перевірка, чи існує вже такий шлях
+        if (pathToFiles.containsKey(filePath)) {
+            // Якщо так, додати новий файл до списку файлів для цього шляху
+            pathToFiles.get(filePath).add(new FileData(fileName, fileSize, filePath));
+        } else {
+            // Якщо шлях ще не існує, створити новий список файлів для цього шляху
+            List<FileData> fileList = new ArrayList<>();
+            fileList.add(new FileData(fileName, fileSize, filePath));
+            pathToFiles.put(filePath, fileList);
         }
+    }
 
-        int sum = 0;
+    public List<FileData> find(String path) {
+        // Повертає список файлів для заданого шляху або порожній список, якщо шлях не існує
+        return pathToFiles.getOrDefault(path, new ArrayList<>());
+    }
 
-      
-        for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 4; j++) {
-                try {
-                 
-                    sum += Integer.parseInt(array[i][j]);
-                } catch (NumberFormatException e) {
-                    
-                    throw new ArrayDataException("Помилка в комірці [" + i + "][" + j + "]: " + array[i][j]);
+    public List<FileData> filterBySize(long maxSize) {
+        // Повертає список файлів, розмір яких не перевищує вказаного значення
+        List<FileData> result = new ArrayList<>();
+        for (List<FileData> files : pathToFiles.values()) {
+            for (FileData file : files) {
+                if (file.getFileSize() <= maxSize) {
+                    result.add(file);
                 }
             }
         }
-
-        return sum;
+        return result;
     }
 
+    public void remove(String path) {
+        // Видаляє шлях і пов'язані з ним файли
+        pathToFiles.remove(path);
+    }
+}
+
+public class Main {
     public static void main(String[] args) {
-        String[][] array = {
-                {"1", "2", "3", "4"},
-                {"5", "6", "7", "8"},
-                {"9", "10", "11", "12"},
-                {"13", "14", "15", "16"}
-        };
+        FileNavigator fileNavigator = new FileNavigator();
 
-        try {
-            int result = doCalc(array);
-            System.out.println("Результат розрахунку: " + result);
-        } catch (ArraySizeException e) {
-            System.err.println("Помилка розміру масиву: " + e.getMessage());
-        } catch (ArrayDataException e) {
-            System.err.println("Помилка даних в масиві: " + e.getMessage());
-        }
-    }
-}
+        fileNavigator.add("files.txt", 1024, "/path/to/file");
+        fileNavigator.add("firstApp.java", 2048, "/path/to/file");
 
+        System.out.println(fileNavigator.find("/path/to/file"));
+        // Виведе: [FileData@1, FileData@2]
 
-class ArraySizeException extends Exception {
-    public ArraySizeException(String message) {
-        super(message);
-    }
-}
+        System.out.println(fileNavigator.filterBySize(1500));
+        // Виведе: [FileData@1, FileData@2]
 
-
-class ArrayDataException extends Exception {
-    public ArrayDataException(String message) {
-        super(message);
+        fileNavigator.remove("/path/to/file");
     }
 }
