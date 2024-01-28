@@ -1,85 +1,28 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.net.Socket;
+import java.util.Scanner;
 
-class FileData {
-    private String fileName;
-    private long fileSize;
-    private String filePath;
+class Scratch {
+    public static void main(String[] args) throws IOException {
+        Scanner sc =  new Scanner(System.in);
 
-    public FileData(String fileName, long fileSize, String filePath) {
-        this.fileName = fileName;
-        this.fileSize = fileSize;
-        this.filePath = filePath;
-    }
+        Socket client = new Socket("localhost", 8081);
+        OutputStream outputStream = client.getOutputStream();
+        InputStream inputStream  = client.getInputStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
 
-    public String getFileName() {
-        return fileName;
-    }
+        PrintWriter pw = new PrintWriter(outputStream, true);
 
-    public long getFileSize() {
-        return fileSize;
-    }
+        String msg = "";
 
-    public String getFilePath() {
-        return filePath;
-    }
-}
-
-class FileNavigator {
-    private Map<String, List<FileData>> pathToFiles = new HashMap<>();
-
-    public void add(String fileName, long fileSize, String filePath) {
-        // Перевірка, чи існує вже такий шлях
-        if (pathToFiles.containsKey(filePath)) {
-            // Якщо так, додати новий файл до списку файлів для цього шляху
-            pathToFiles.get(filePath).add(new FileData(fileName, fileSize, filePath));
-        } else {
-            // Якщо шлях ще не існує, створити новий список файлів для цього шляху
-            List<FileData> fileList = new ArrayList<>();
-            fileList.add(new FileData(fileName, fileSize, filePath));
-            pathToFiles.put(filePath, fileList);
+        while(!(msg.toLowerCase().equals("exit"))) {
+            System.out.print("Command : ");
+            msg = sc.nextLine();
+            pw.println(msg);
+            String serverMessage = reader.readLine();
+            System.out.println("SERVER : " + serverMessage);
         }
     }
-
-    public List<FileData> find(String path) {
-        // Повертає список файлів для заданого шляху або порожній список, якщо шлях не існує
-        return pathToFiles.getOrDefault(path, new ArrayList<>());
-    }
-
-    public List<FileData> filterBySize(long maxSize) {
-        // Повертає список файлів, розмір яких не перевищує вказаного значення
-        List<FileData> result = new ArrayList<>();
-        for (List<FileData> files : pathToFiles.values()) {
-            for (FileData file : files) {
-                if (file.getFileSize() <= maxSize) {
-                    result.add(file);
-                }
-            }
-        }
-        return result;
-    }
-
-    public void remove(String path) {
-        // Видаляє шлях і пов'язані з ним файли
-        pathToFiles.remove(path);
-    }
 }
 
-public class Main {
-    public static void main(String[] args) {
-        FileNavigator fileNavigator = new FileNavigator();
 
-        fileNavigator.add("files.txt", 1024, "/path/to/file");
-        fileNavigator.add("firstApp.java", 2048, "/path/to/file");
-
-        System.out.println(fileNavigator.find("/path/to/file"));
-        // Виведе: [FileData@1, FileData@2]
-
-        System.out.println(fileNavigator.filterBySize(1500));
-        // Виведе: [FileData@1, FileData@2]
-
-        fileNavigator.remove("/path/to/file");
-    }
-}
